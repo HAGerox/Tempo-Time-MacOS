@@ -39,6 +39,11 @@ fn audio_command(
 
 fn main() {
     let app = tauri::Builder::default()
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                window.app_handle().exit(0);
+            }
+        })
         .setup(|app| {
             let helper = std::env::current_exe()?.parent().ok_or("Missing application directory")?.join("tempo-service");
             let mut child = Command::new(helper).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit()).spawn()?;

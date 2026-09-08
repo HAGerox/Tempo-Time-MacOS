@@ -52,7 +52,9 @@ commits = subprocess.run(['git', 'log', '--all', '--format=%H%x00%ae%x00%ce%x00%
                          cwd=root, capture_output=True, text=True)
 if commits.returncode == 0:
     for record in commits.stdout.split('\0'):
-        if '@' in record and '\n' not in record and not record.endswith('@users.noreply.github.com'):
+        if ('@' in record and '\n' not in record
+                and not record.endswith('@users.noreply.github.com')
+                and record != 'noreply@github.com'):
             findings.append(('commit metadata', 'non-GitHub-noreply email'))
         if patterns['session checkpoint reference'].search(record):
             findings.append(('commit metadata', 'session checkpoint reference'))
