@@ -1,0 +1,162 @@
+import Foundation
+import AVFoundation
+import TempoCore
+import TempoInput
+
+struct Command: Decodable {
+    let action: String
+    var uid: String?
+    var channel: Int?
+}
+
+final class Service {
+    let queue = DispatchQueue(label: "tempo.service")
+    let input = AudioInput()
+    let defaults = UserDefaults.standard
+    var session = TempoSession()
+    var devices: [InputDevice] = []
+    var uid: String
+    var channel: Int
+    var listening = false
+    var starting = false
+    var error: String?
+    var generation = 0
+    var ticks = 0
+    var timer: DispatchSourceTimer?
+    var lastJSON = Data()
+    let demo: Bool
+    var device: InputDevice? { devices.first { $0.uid == uid } }
+    var now: Double { ProcessInfo.processInfo.systemUptime }
+
+    init() {
+        uid = defaults.string(forKey: "deviceUID") ?? ""
+        channel = max(1, defaults.integer(forKey: "channel"))
+        demo = CommandLine.arguments.contains("--demo")
+    }
+
+    func run() {
+        queue.async {
+            self.refresh()
+            let timer = DispatchSource.makeTimerSource(queue: self.queue)
+            timer.schedule(deadline: .now(), repeating: .milliseconds(100))
+            timer.setEventHandler {
+                self.ticks += 1
+                if self.ticks % 20 == 0 { self.refresh() }
+                self.publish()
+            }
+            self.timer = timer
+            timer.resume()
+        }
+        DispatchQueue.global().async {
+            while let line = readLine() {
+                guard let data = line.data(using: .utf8), let command = try? JSONDecoder().decode(Command.self, from: data) else { continue }
+                self.queue.async { self.handle(command) }
+            }
+            self.queue.async { self.input.stop { exit(0) } }
+        }
+    }
+
+    func handle(_ command: Command) {
+        switch command.action {
+        case "tap": session.tap(at: now)
+        case "start": start()
+        case "stop": stop()
+        case "select":
+            let restart = listening || starting
+            stop()
+            if let uid = command.uid, uid != self.uid { self.uid = uid; channel = 1 }
+            if let channel = command.channel { self.channel = max(1, min(channel, device?.channels ?? 1)) }
+            defaults.set(uid, forKey: "deviceUID"); defaults.set(channel, forKey: "channel")
+            if restart { start() }
+        case "refresh": refresh()
+        default: break
+        }
+        publish()
+    }
+
+    func refresh() {
+        input.devices { result in self.queue.async {
+            switch result {
+            case .success(let devices):
+                let previous = self.device
+                self.devices = devices
+                if self.uid.isEmpty, let first = devices.first { self.uid = first.uid }
+                if (self.listening || self.starting) && !self.demo && self.device != previous {
+                    self.stop(); self.error = "Input disconnected or changed. Choose an input and listen again."
+                }
+                if let device = self.device, self.channel > device.channels { self.channel = 1 }
+            case .failure: self.error = "Couldn’t find audio inputs."
+            }
+            self.publish()
+        } }
+    }
+
+    func start() {
+        guard !listening && !starting else { return }
+        guard demo || device != nil else { error = "Choose an available input."; return }
+        error = nil; session.audioReading = nil
+        generation += 1
+        let token = generation
+        starting = true
+        if demo { open(token); return }
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized: open(token)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { granted in self.queue.async {
+                guard self.generation == token else { return }
+                if granted { self.open(token) } else { self.denied() }
+            } }
+        default: denied()
+        }
+    }
+
+    func denied() {
+        starting = false
+        error = "Allow Tempo Time in System Settings → Privacy & Security → Microphone."
+        publish()
+    }
+
+    func open(_ token: Int) {
+        input.start(device: demo ? nil : device, channel: demo ? 1 : channel, settings: DetectorSettings()) { update in
+            self.queue.async {
+                guard self.generation == token else { return }
+                switch update {
+                case .started: self.starting = false; self.listening = true
+                case .measurement(let snapshot, _, _, _): self.session.audioReading = snapshot.reading
+                case .failed(let message): self.stop(); self.error = message
+                }
+                self.publish()
+            }
+        }
+    }
+
+    func stop() {
+        generation += 1
+        input.stop()
+        listening = false; starting = false; session.audioReading = nil; error = nil
+    }
+
+    func publish() {
+        let time = now
+        let manual = session.isManual(at: time)
+        let reading = session.reading(at: time)
+        let pulse = reading?.pulseMilliseconds
+        let stale = !manual && reading?.isStale == true
+        let visiblePulse = stale ? nil : pulse
+        let status = manual ? "Manual" : starting ? "Connecting" : stale ? "No signal" : listening ? "Audio" : "Audio off"
+        var value: [String: Any] = [
+            "devices": devices.map { ["uid": $0.uid, "name": $0.name, "channels": $0.channels] },
+            "uid": uid, "channel": channel, "listening": listening, "starting": starting,
+            "manual": manual, "status": status,
+            "bpm": visiblePulse.map { 60000 / $0 } as Any? ?? NSNull(),
+            "pulse": visiblePulse as Any? ?? NSNull()
+        ]
+        value["error"] = error as Any? ?? NSNull()
+        guard let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]), data != lastJSON else { return }
+        lastJSON = data
+        FileHandle.standardOutput.write(data + Data([10]))
+    }
+}
+let service = Service()
+service.run()
+dispatchMain()

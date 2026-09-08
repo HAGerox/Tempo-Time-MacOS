@@ -1,0 +1,8 @@
+{
+  "name": "Tempo Time",
+  "slug": "tempo-time",
+  "bundleId": "io.github.hagerox.tempotime",
+  "version": "0.1.0",
+  "stack": "tauri",
+  "release": "macos"
+}
