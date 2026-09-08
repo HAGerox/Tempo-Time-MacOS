@@ -19,6 +19,8 @@ final class Service {
     var channel: Int
     var listening = false
     var starting = false
+    var peakDB = -120.0
+    var peakTime = 0.0
     var error: String?
     var generation = 0
     var ticks = 0
@@ -122,7 +124,13 @@ final class Service {
                 guard self.generation == token else { return }
                 switch update {
                 case .started: self.starting = false; self.listening = true
-                case .measurement(let snapshot, _, _, _): self.session.audioReading = snapshot.reading
+                case .measurement(let snapshot, let peak, _, _):
+                    self.session.audioReading = snapshot.reading
+                    // Hold brief clicks long enough for the UI's 100 ms polling interval.
+                    if peak >= self.peakDB || self.now - self.peakTime > 0.2 {
+                        self.peakDB = peak.isFinite ? max(-120, min(0, peak)) : -120
+                        self.peakTime = self.now
+                    }
                 case .failed(let message): self.stop(); self.error = message
                 }
                 self.publish()
@@ -134,6 +142,7 @@ final class Service {
         generation += 1
         input.stop()
         listening = false; starting = false; session.audioReading = nil; error = nil
+        peakDB = -120; peakTime = 0
     }
 
     func publish() {
@@ -148,6 +157,7 @@ final class Service {
             "devices": devices.map { ["uid": $0.uid, "name": $0.name, "channels": $0.channels] },
             "uid": uid, "channel": channel, "listening": listening, "starting": starting,
             "manual": manual, "status": status,
+            "peakDB": listening && time - peakTime < 0.5 ? peakDB : -120,
             "bpm": visiblePulse.map { 60000 / $0 } as Any? ?? NSNull(),
             "pulse": visiblePulse as Any? ?? NSNull()
         ]

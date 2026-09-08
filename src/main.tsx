@@ -7,8 +7,9 @@ interface Device { uid: string; name: string; channels: number }
 interface Snapshot {
   devices: Device[]; uid: string; channel: number; listening: boolean; starting: boolean;
   manual: boolean; status: string; bpm: number | null; pulse: number | null; error: string | null;
+  peakDB: number;
 }
-const initial: Snapshot = { devices: [], uid: '', channel: 1, listening: false, starting: false, manual: false, status: 'Audio off', bpm: null, pulse: null, error: null };
+const initial: Snapshot = { devices: [], uid: '', channel: 1, listening: false, starting: false, manual: false, status: 'Audio off', bpm: null, pulse: null, error: null, peakDB: -120 };
 const notes = [ [1, 'Whole'], [2, 'Half'], [4, 'Quarter'], [8, 'Eighth'], [16, 'Sixteenth'], [32, 'Thirty-second'] ] as const;
 
 function Note({ value }: { value: number }) {
@@ -59,6 +60,8 @@ function App() {
   }, []);
   const device = state.devices.find(device => device.uid === state.uid);
   const active = state.listening || state.starting;
+  const peakDB = state.listening && Number.isFinite(state.peakDB) ? Math.max(-60, Math.min(0, state.peakDB)) : -60;
+  const listenLabel = state.starting ? 'Cancel connection' : state.listening ? 'Stop listening' : 'Listen to audio';
   return <main>
     <section className="tempo-panel" aria-label="Tempo">
       <div className="routing">
@@ -70,10 +73,14 @@ function App() {
           <label><span>Channel</span><div className="select-wrap"><select aria-label="Input channel" disabled={!device} value={state.channel} onChange={event => void command('select', { channel: Number(event.target.value) })}>
             {Array.from({ length: device?.channels || 1 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
           </select></div></label>
-          <button className={`listen ${active ? 'active' : ''}`} disabled={!device && !active} onClick={() => void command(active ? 'stop' : 'start')} aria-label={state.starting ? 'Cancel connection' : state.listening ? 'Stop listening' : 'Listen to audio'}>
+          <div className="audio-monitor">
+          <div className="level-meter" role="meter" aria-label={`Channel ${state.channel} input level`} aria-valuemin={-60} aria-valuemax={0} aria-valuenow={peakDB} aria-valuetext={state.listening ? `${Math.round(peakDB)} dBFS` : 'Audio off'}>
+            <span style={{ transform: `scaleX(${(peakDB + 60) / 60})`, background: peakDB >= -3 ? 'var(--coral)' : peakDB >= -12 ? '#d19a3c' : '#4f9870' }} />
+          </div>
+          <button className={`listen ${active ? 'active' : ''}`} disabled={!device && !active} onClick={() => void command(active ? 'stop' : 'start')} aria-label={listenLabel} title={listenLabel} aria-pressed={active}>
             <svg viewBox="0 0 20 20" aria-hidden="true">{active ? <rect x="5" y="5" width="10" height="10" rx="1" /> : <path d="M7 4L15 10L7 16Z" />}</svg>
-            {state.starting ? 'Cancel' : state.listening ? 'Stop' : 'Listen'}
           </button>
+          </div>
         </div>
       </div>
       <div className="dial-area">
@@ -84,7 +91,7 @@ function App() {
         </button>
         <span className={`status ${state.manual ? 'manual' : ''}`} role="status"><i />{state.status}</span>
       </div>
-      {(error || state.error) && <p className="error" role="alert">{error || state.error}</p>}
+      <p className="error" role="alert">{error || state.error || ''}</p>
     </section>
     <section className="notes-panel" aria-label="Note lengths">
       <div className="notes-heading"><span>NOTE LENGTHS</span><span>MILLISECONDS</span></div>

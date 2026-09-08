@@ -49,7 +49,7 @@ fn main() {
             let mut child = Command::new(helper).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit()).spawn()?;
             let input = child.stdin.take().ok_or("Missing audio input pipe")?;
             let output = child.stdout.take().ok_or("Missing audio output pipe")?;
-            let latest = Arc::new(Mutex::new(json!({"devices": [], "channel": 1, "uid": "", "status": "Audio off", "listening": false, "starting": false, "manual": false, "bpm": null, "pulse": null, "error": null})));
+            let latest = Arc::new(Mutex::new(json!({"devices": [], "channel": 1, "uid": "", "status": "Audio off", "listening": false, "starting": false, "manual": false, "bpm": null, "pulse": null, "peakDB": -120, "error": null})));
             let reader_state = latest.clone();
             std::thread::spawn(move || {
                 for line in BufReader::new(output).lines() {
@@ -64,6 +64,7 @@ fn main() {
                     state["starting"] = json!(false);
                     state["bpm"] = Value::Null;
                     state["pulse"] = Value::Null;
+                    state["peakDB"] = json!(-120);
                 }
             });
             app.manage(AudioService { child: Mutex::new(child), input: Mutex::new(input), latest });

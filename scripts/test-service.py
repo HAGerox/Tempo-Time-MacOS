@@ -26,7 +26,10 @@ def until(predicate, timeout=7):
 try:
     first = until(lambda s: 'devices' in s)
     assert not first['listening'] and first['pulse'] is None
+    assert first['peakDB'] == -120
     send('start')
+    signal = until(lambda s: s['listening'] and s['peakDB'] > -60)
+    assert -60 < signal['peakDB'] <= 0
     audio = until(lambda s: s['pulse'] is not None)
     assert abs(audio['pulse'] - 500) < .1 and not audio['manual']
     send('tap')
@@ -42,6 +45,7 @@ try:
     send('stop')
     stopped = until(lambda s: not s['listening'])
     assert stopped['pulse'] is None
+    assert stopped['peakDB'] == -120
     send('start')
     restarted = until(lambda s: s['listening'] and s['pulse'] is not None)
     assert abs(restarted['pulse'] - 500) < .1
