@@ -3,7 +3,7 @@
 Run `npm ci`, then `bash scripts/build-macos.sh` on macOS with Xcode/Swift 6,
 Rust and Node. The script tests the engine and audio-service protocol, builds
 the Tauri frontend and native shell, verifies the bundled helper/signatures,
-and uses the utility template's unsigned-DMG packager.
+and uses the unsigned-DMG packager.
 
 Outputs are `dist/dmg-stage/Tempo Time.app` and `dist/tempo-time-macOS.dmg`.
 The build targets the current Mac's architecture. It is ad-hoc signed and not
@@ -27,6 +27,5 @@ a separate job publishes only `tempo-time-macOS.dmg`. The tagged release job
 alone receives write permission. CI uses the Apple Silicon `macos-15` runner;
 the download must not be described as universal or Intel-tested.
 
-A source-code publication is separate from an installer release. Keep a new
-repository private until the publication audit is reviewed. Do not tag a release
-until the manual hardware checks in `docs/TESTING.md` are completed.
+Before publishing, review the publication audit and record the checks performed
+from `docs/TESTING.md`. Describe unverified hardware/platform coverage accurately.

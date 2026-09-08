@@ -69,6 +69,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: macOS-arm64
@@ -78,4 +81,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" release/tempo-time-macOS.dmg --verify-tag --generate-notes
+        run: gh release create "$RELEASE_TAG" release/tempo-time-macOS.dmg --verify-tag --title "Tempo Time ${RELEASE_TAG#v}" --notes-file "docs/releases/$RELEASE_TAG.md"

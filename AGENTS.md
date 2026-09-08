@@ -4,7 +4,7 @@
 
 Read DESIGN.md and ARCHITECTURE.md.
 
-The desktop app uses the Tauri + React + TypeScript starter from [utility-app-template](https://github.com/HAGerox/utility-app-template), explicitly selected by the user. `npm ci` prepares development; `npm run dev` opens the app. `npm test` runs the Swift engine and real audio-service integration tests, including the 30-second manual timeout. `bash scripts/build-macos.sh` builds the local app and unsigned DMG. The Swift package contains the audio backend and CLI only; do not restore a SwiftUI interface. A web preview does not verify the Tauri/audio bridge.
+The desktop app uses Tauri + React + TypeScript. `npm ci` prepares development; `npm run dev` opens the app. `npm test` runs the Swift engine and real audio-service integration tests, including the 30-second manual timeout. `bash scripts/build-macos.sh` builds the local app and unsigned DMG. The Swift package contains the audio backend and CLI only; do not restore a SwiftUI interface. A web preview does not verify the Tauri/audio bridge.
 
 Keep the audio callback allocation-free and analysis on its serial worker. Preserve the native detector tests; synthetic PCM is not Dante hardware validation.
 

@@ -12,11 +12,11 @@ treated as a quarter note. Tempo Time processes audio locally, without recording
 or playback. Core Audio inputs, including Dante Virtual Soundcard, are supported.
 Allow Microphone access when macOS asks.
 
-The downloadable build requires an Apple Silicon Mac with macOS 13 or later. Dante Virtual Soundcard is separate software from Audinate.
+The downloadable build requires an Apple Silicon Mac with macOS 13 or later. Dante Virtual Soundcard is installed separately.
 
 ## Development
 
-The interface uses the Tauri + React + TypeScript utility template. The tested
+The interface uses Tauri + React + TypeScript. The
 Swift/Core Audio detector is bundled as a helper; users need no developer tools.
 
 ```sh

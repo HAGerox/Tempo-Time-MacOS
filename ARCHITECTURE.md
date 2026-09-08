@@ -1,12 +1,11 @@
 # Architecture
 
-The user explicitly selected Tauri + React + TypeScript from the local
-`utility-app-template` for a consistent, minimal interface. SwiftUI is removed.
+The interface uses Tauri + React + TypeScript.
 
 - `src/`: one React view with styled input/channel lists, an always-running channel meter, one
   large tap button, a small source indicator and six note-duration rows.
   No mode selector, BPM field, rhythm options or detector settings.
-- `src-tauri/`: the template's Rust/Tauri shell bundles the frontend and launches
+- `src-tauri/`: the Rust/Tauri shell bundles the frontend and launches
   the audio helper. Typed IPC commands travel over stdin; JSON snapshots return
   over stdout. The shell caches snapshots and terminates the helper on exit.
   The helper path is resolved beside the executable, independent of PATH.
@@ -29,5 +28,5 @@ The user explicitly selected Tauri + React + TypeScript from the local
 
 Tauri embeds the helper as an external binary, following its
 [sidecar packaging](https://v2.tauri.app/develop/sidecar/) convention. The app and
-helper are signed; the template packager wraps them in an unsigned DMG. Runtime
+helper are signed; the packager wraps them in an unsigned DMG. Runtime
 dependencies come from macOS, with no Node, Swift or Rust installation needed.

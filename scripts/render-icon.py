@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rasterize the existing Android vector mark (assets/AppIcon.svg) at macOS icon sizes.
+"""Rasterize the app vector mark (assets/AppIcon.svg) at macOS icon sizes.
 Developer-only Pillow dependency; generated PNG/ICNS assets are committed.
 """
 from pathlib import Path
