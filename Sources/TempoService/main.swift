@@ -31,9 +31,9 @@ final class Service {
     var now: Double { ProcessInfo.processInfo.systemUptime }
 
     init() {
-        uid = defaults.string(forKey: "deviceUID") ?? ""
-        channel = max(1, defaults.integer(forKey: "channel"))
         demo = CommandLine.arguments.contains("--demo")
+        uid = demo ? "" : defaults.string(forKey: "deviceUID") ?? ""
+        channel = demo ? 1 : max(1, defaults.integer(forKey: "channel"))
     }
 
     func run() {
@@ -65,7 +65,9 @@ final class Service {
             stop()
             if let uid = command.uid, uid != self.uid { self.uid = uid; channel = 1 }
             if let channel = command.channel { self.channel = max(1, min(channel, device?.channels ?? 1)) }
-            defaults.set(uid, forKey: "deviceUID"); defaults.set(channel, forKey: "channel")
+            if !demo {
+                defaults.set(uid, forKey: "deviceUID"); defaults.set(channel, forKey: "channel")
+            }
             ensureListening()
         default: break
         }
