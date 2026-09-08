@@ -29,7 +29,7 @@ fn audio_command(
     uid: Option<String>,
     channel: Option<u32>,
 ) -> Result<(), String> {
-    if !["tap", "start", "stop", "select", "refresh"].contains(&action.as_str()) {
+    if !["tap", "select"].contains(&action.as_str()) {
         return Err("Unknown audio action".into());
     }
     let data = json!({"action": action, "uid": uid, "channel": channel});
@@ -49,7 +49,7 @@ fn main() {
             let mut child = Command::new(helper).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit()).spawn()?;
             let input = child.stdin.take().ok_or("Missing audio input pipe")?;
             let output = child.stdout.take().ok_or("Missing audio output pipe")?;
-            let latest = Arc::new(Mutex::new(json!({"devices": [], "channel": 1, "uid": "", "status": "Audio off", "listening": false, "starting": false, "manual": false, "bpm": null, "pulse": null, "peakDB": -120, "error": null})));
+            let latest = Arc::new(Mutex::new(json!({"devices": [], "channel": 1, "uid": "", "status": "Connecting", "listening": false, "starting": false, "manual": false, "bpm": null, "pulse": null, "peakDB": -120, "error": null})));
             let reader_state = latest.clone();
             std::thread::spawn(move || {
                 for line in BufReader::new(output).lines() {

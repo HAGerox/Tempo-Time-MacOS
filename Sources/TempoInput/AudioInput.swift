@@ -36,7 +36,7 @@ public final class AudioInput {
         queue.async {
             let count = tt_list_devices(nil, 0)
             guard count >= 0 else {
-                completion(.failure(InputError.message("Could not list audio inputs (Core Audio \(count)). Try Refresh inputs.")))
+                completion(.failure(InputError.message("Could not list audio inputs (Core Audio \(count)). Check that an input device is connected.")))
                 return
             }
             var raw = [TTDeviceInfo](repeating: TTDeviceInfo(), count: max(Int(count), 1))
@@ -72,7 +72,7 @@ public final class AudioInput {
             if let device = device {
                 var error: Int32 = 0
                 guard let capture = tt_capture_start(device.id, UInt32(channel - 1), &error) else {
-                    receive(.failed("Could not open \(device.name), channel \(channel) (Core Audio \(error)). Check the device is running and audio input permission is enabled, then refresh and retry."))
+                    receive(.failed("Could not open \(device.name), channel \(channel) (Core Audio \(error)). Check the device is running and audio input permission is enabled."))
                     return
                 }
                 self.capture = capture
@@ -112,7 +112,7 @@ public final class AudioInput {
         if tt_capture_error(capture) != 0 || tt_capture_dropped(capture) != 0 {
             let detail = tt_capture_dropped(capture) > 0 ? "The audio analysis queue overflowed." : "The audio device reported error \(tt_capture_error(capture))."
             stopOnQueue()
-            receive(.failed("\(detail) Measurement stopped. Check the input and try Listen again."))
+            receive(.failed("\(detail) Check the input; Tempo Time will reconnect automatically."))
             return
         }
         var latest: AnalysisSnapshot?
@@ -134,7 +134,7 @@ public final class AudioInput {
             receive(.measurement(latest, peak: peak, clipped: clipped, onsets: onsets))
         } else if ProcessInfo.processInfo.systemUptime - lastData > 2 {
             stopOnQueue()
-            receive(.failed("The device stopped delivering audio. Check Dante Virtual Soundcard or reconnect your interface, then refresh inputs and retry."))
+            receive(.failed("The device stopped delivering audio. Check Dante Virtual Soundcard or reconnect your interface, Tempo Time will reconnect automatically."))
         }
     }
 }

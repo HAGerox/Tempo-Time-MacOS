@@ -3,7 +3,7 @@
 The user explicitly selected Tauri + React + TypeScript from the local
 `utility-app-template` for a consistent, minimal interface. SwiftUI is removed.
 
-- `src/`: one React view with styled input/channel lists, audio start/stop, one
+- `src/`: one React view with styled input/channel lists, an always-running channel meter, one
   large tap button, a small source indicator and six note-duration rows.
   No mode selector, BPM field, rhythm options or detector settings.
 - `src-tauri/`: the template's Rust/Tauri shell bundles the frontend and launches
@@ -17,12 +17,13 @@ The user explicitly selected Tauri + React + TypeScript from the local
   `TempoSession`. Taps temporarily override the current audio reading. The first
   tap clears the audio value, subsequent taps establish the manual tempo, and
   exactly 30 seconds after the last tap the current audio reading resumes.
-  Capture can continue underneath the manual override. If audio is stopped or
+  Capture continues underneath the manual override. If audio is
   unavailable, returning to Audio shows empty values.
 - `Sources/TempoInput` and `Sources/AudioBridge`: existing serial analysis worker
   and allocation-free C AUHAL callback/queue. One explicitly selected channel,
   no mixing, recording, playback or system-device changes. Detection uses fixed
-  defaults. Permission is requested only when Listen is pressed.
+  defaults. Permission is requested on launch. Capture starts automatically and reconnects
+  after selection/device changes; there is no start/stop control.
 - `tempo-analyze` and `tempo-service --demo`: diagnostic harnesses, not app modes.
   Tests exercise the same engine and service as the packaged app.
 

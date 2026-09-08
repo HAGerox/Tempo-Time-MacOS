@@ -25,9 +25,6 @@ def until(predicate, timeout=7):
     raise AssertionError('Timed out waiting for audio service')
 try:
     first = until(lambda s: 'devices' in s)
-    assert not first['listening'] and first['pulse'] is None
-    assert first['peakDB'] == -120
-    send('start')
     signal = until(lambda s: s['listening'] and s['peakDB'] > -60)
     assert -60 < signal['peakDB'] <= 0
     audio = until(lambda s: s['pulse'] is not None)
@@ -42,14 +39,12 @@ try:
     print('Audio 120 BPM; first tap clears audio value; taps override while capture continues.', flush=True)
     restored = until(lambda s: not s['manual'], timeout=33)
     assert abs(restored['pulse'] - 500) < .1 and restored['listening']
-    send('stop')
-    stopped = until(lambda s: not s['listening'])
-    assert stopped['pulse'] is None
-    assert stopped['peakDB'] == -120
-    send('start')
+    send('select', channel=1)
+    changing = until(lambda s: s['starting'])
+    assert changing['pulse'] is None and changing['peakDB'] == -120
     restarted = until(lambda s: s['listening'] and s['pulse'] is not None)
     assert abs(restarted['pulse'] - 500) < .1
-    print('30-second return to live audio, stop clears output, and restart passed.', flush=True)
+    print('Automatic capture on launch, live meter, 30-second return, and automatic capture after channel selection passed.', flush=True)
 finally:
     process.stdin.close()
     process.wait(timeout=5)

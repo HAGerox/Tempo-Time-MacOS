@@ -16,7 +16,7 @@ Before publishing an installer, verify:
 - An isolated audio click through the selected device and channel, including
   high channel numbers. At 120 quarter-note BPM, expect 500 ms per quarter
   note and 62.50 ms per thirty-second note.
-- Tap override and automatic return after 30 seconds, stop/restart and quit.
+- Tap override and automatic return after 30 seconds, automatic capture on launch/channel changes and quit.
 - Input disconnect, sample-rate changes, sleep/wake and recovery.
 - Window sizing, both appearances, keyboard access and VoiceOver.
 - The actual downloaded app on the advertised architecture and macOS baseline.

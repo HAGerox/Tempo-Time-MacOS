@@ -2,7 +2,8 @@
 
 Tap a tempo or listen to an audio click track. Read the note lengths in milliseconds.
 
-Choose an input and channel from the lists, then press **Listen**. Tap the circle
+Choose an input and channel from the lists. Tempo detection and the level meter
+run automatically. Tap the circle
 (or press Space) whenever you want to set the tempo yourself. A **Manual** indicator
 appears; after 30 seconds without a tap, the display returns to audio automatically.
 

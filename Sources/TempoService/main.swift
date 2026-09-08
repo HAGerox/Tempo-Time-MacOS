@@ -61,16 +61,12 @@ final class Service {
     func handle(_ command: Command) {
         switch command.action {
         case "tap": session.tap(at: now)
-        case "start": start()
-        case "stop": stop()
         case "select":
-            let restart = listening || starting
             stop()
             if let uid = command.uid, uid != self.uid { self.uid = uid; channel = 1 }
             if let channel = command.channel { self.channel = max(1, min(channel, device?.channels ?? 1)) }
             defaults.set(uid, forKey: "deviceUID"); defaults.set(channel, forKey: "channel")
-            if restart { start() }
-        case "refresh": refresh()
+            ensureListening()
         default: break
         }
         publish()
@@ -84,13 +80,26 @@ final class Service {
                 self.devices = devices
                 if self.uid.isEmpty, let first = devices.first { self.uid = first.uid }
                 if (self.listening || self.starting) && !self.demo && self.device != previous {
-                    self.stop(); self.error = "Input disconnected or changed. Choose an input and listen again."
+                    self.stop()
                 }
                 if let device = self.device, self.channel > device.channels { self.channel = 1 }
+                self.ensureListening()
             case .failure: self.error = "Couldn’t find audio inputs."
             }
             self.publish()
         } }
+    }
+
+    func ensureListening() {
+        guard !listening && !starting else { return }
+        guard demo || device != nil else { error = "Choose an available input."; return }
+        if !demo {
+            switch AVCaptureDevice.authorizationStatus(for: .audio) {
+            case .denied, .restricted: denied(); return
+            default: break
+            }
+        }
+        start()
     }
 
     func start() {
@@ -152,7 +161,7 @@ final class Service {
         let pulse = reading?.pulseMilliseconds
         let stale = !manual && reading?.isStale == true
         let visiblePulse = stale ? nil : pulse
-        let status = manual ? "Manual" : starting ? "Connecting" : stale ? "No signal" : listening ? "Audio" : "Audio off"
+        let status = manual ? "Manual" : starting ? "Connecting" : stale ? "No signal" : listening ? "Audio" : "Waiting for audio"
         var value: [String: Any] = [
             "devices": devices.map { ["uid": $0.uid, "name": $0.name, "channels": $0.channels] },
             "uid": uid, "channel": channel, "listening": listening, "starting": starting,
